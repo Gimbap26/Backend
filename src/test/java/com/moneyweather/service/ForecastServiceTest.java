@@ -41,6 +41,18 @@ class ForecastServiceTest {
     }
 
     @Test
+    void paidEventsAreAlreadyInBalanceAndExcluded() {
+        List<FinancialEventEntity> events = List.of(
+                event(520_000, Direction.OUTFLOW, EventStatus.PAID, true),
+                event(80_000, Direction.OUTFLOW, EventStatus.SCHEDULED, true)
+        );
+        assertThat(service.fixedOutflows(events)).isEqualTo(80_000);
+
+        Map<String, Object> result = service.forecast(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), 1_000_000, events);
+        assertThat(result.get("minimumExpectedBalance")).isEqualTo(920_000L);
+    }
+
+    @Test
     void weatherThresholdsAreStable() {
         assertThat(service.weather(99_999)).isEqualTo(WeatherStatus.STORM);
         assertThat(service.weather(100_000)).isEqualTo(WeatherStatus.RAINY);

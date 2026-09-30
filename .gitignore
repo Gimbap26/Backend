@@ -3,3 +3,6 @@ target/
 apache-maven-*.zip
 .idea/
 *.iml
+
+# 배포용 비밀값 (POSTGRES_PASSWORD, JWT_SECRET, AI_API_KEY). 예시는 .env.example
+.env

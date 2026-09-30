@@ -1,9 +1,11 @@
 package com.moneyweather.api;
 
+import com.moneyweather.security.AuthTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,9 +16,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(DemoUserTokenConfig.class)
 class MoneyWeatherControllerTest {
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    AuthTokenService tokens;
 
     @Test
     void dashboardReturnsMoneyWeatherSummary() throws Exception {
@@ -134,9 +140,11 @@ class MoneyWeatherControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalExpense").value(8000));
 
+        // 6~8월 거래에서 넷플릭스·유튜브 프리미엄을 찾고, 이미 규칙으로 등록된 통신비는 제외한다
         mockMvc.perform(post("/api/v1/agent/detect-recurring"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.candidates.length()").value(1));
+                .andExpect(jsonPath("$.candidates.length()").value(2))
+                .andExpect(jsonPath("$.candidates[?(@.merchant=='통신비')]").isEmpty());
 
         mockMvc.perform(post("/api/v1/agent/recommend-actions"))
                 .andExpect(status().isOk())
@@ -145,15 +153,16 @@ class MoneyWeatherControllerTest {
 
     @Test
     void unknownCurrentUserCannotAccessResources() throws Exception {
-        mockMvc.perform(get("/api/v1/dashboard").header("X-User-Id", "999"))
-                .andExpect(status().isNotFound());
+        // 서명은 올바르지만 존재하지 않는 사용자의 토큰
+        mockMvc.perform(get("/api/v1/dashboard").header("Authorization", "Bearer " + tokens.issue(999L, 0)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void bearerTokenCanResolveCurrentUser() throws Exception {
-        String response = mockMvc.perform(post("/api/v1/auth/dev-token")
+        String response = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
-                        .content("{\"userId\":1}"))
+                        .content("{\"email\":\"demo@moneyweather.dev\",\"password\":\"demo1234!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andReturn()

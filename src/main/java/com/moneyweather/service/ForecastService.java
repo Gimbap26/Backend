@@ -16,11 +16,17 @@ public class ForecastService {
         return accounts.stream().filter(AccountEntity::isIncludedInAssets).mapToLong(AccountEntity::getBalance).sum();
     }
 
+    /** 아직 지불되지 않은(SCHEDULED) 고정 지출 합계. 결제 완료분은 이미 잔액에서 빠졌으므로 제외한다. */
     public long fixedOutflows(List<FinancialEventEntity> events) {
         return events.stream()
-                .filter(e -> e.isFixed() && e.getDirection() == Direction.OUTFLOW && e.getStatus() != EventStatus.CANCELED)
+                .filter(e -> e.isFixed() && e.getDirection() == Direction.OUTFLOW && isPending(e))
                 .mapToLong(FinancialEventEntity::getAmount)
                 .sum();
+    }
+
+    /** 잔액에 아직 반영되지 않은 예정 이벤트인지. 취소분과 결제 완료분은 앞으로의 현금 흐름이 아니다. */
+    public boolean isPending(FinancialEventEntity event) {
+        return event.getStatus() == EventStatus.SCHEDULED;
     }
 
     public WeatherStatus weather(long amount) {
@@ -48,7 +54,7 @@ public class ForecastService {
         LocalDate minDate = from;
         Map<LocalDate, List<FinancialEventEntity>> byDate = new HashMap<>();
         for (FinancialEventEntity event : events) {
-            if (event.getStatus() != EventStatus.CANCELED) {
+            if (isPending(event)) {
                 byDate.computeIfAbsent(event.getEventDate(), ignored -> new ArrayList<>()).add(event);
             }
         }

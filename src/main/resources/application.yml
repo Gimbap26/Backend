@@ -1,5 +1,8 @@
 server:
   port: 8080
+  # 리버스 프록시(Nginx 등) 뒤에서 돌리면 framework 로 바꿔 X-Forwarded-For 의 실제 접속 IP 를 쓴다.
+  # 프록시 없이 바로 노출할 때는 none 으로 둔다(아무나 헤더로 IP 를 속일 수 있으므로).
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
 
 spring:
   application:
@@ -21,7 +24,8 @@ spring:
     locations: classpath:db/migration
   h2:
     console:
-      enabled: true
+      # 켜려면 H2_CONSOLE_ENABLED=true. 켜면 인증 없이 DB 에 접근할 수 있으므로 개발 PC 에서만 쓴다.
+      enabled: ${H2_CONSOLE_ENABLED:false}
   jackson:
     time-zone: Asia/Seoul
     serialization:
@@ -46,10 +50,28 @@ management:
 
 money-weather:
   auth:
+    # 개발용 기본값. 운영(postgres 프로필)에서는 JWT_SECRET 을 반드시 지정해야 기동된다.
     jwt-secret: ${JWT_SECRET:dev-secret-change-me}
     ttl-seconds: ${JWT_TTL_SECONDS:86400}
+    login:
+      max-failures-per-email: ${LOGIN_MAX_FAILURES_PER_EMAIL:5}
+      max-failures-per-ip: ${LOGIN_MAX_FAILURES_PER_IP:20}
+      window-minutes: ${LOGIN_FAILURE_WINDOW_MINUTES:15}
+  cors:
+    # 브라우저에서 API 를 부를 수 있는 프론트 주소. 쉼표로 구분한다.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:3000}
+  dev:
+    # DB 가 비어 있으면 시작할 때 데모 계정과 데이터를 만든다.
+    demo-data-enabled: ${DEMO_DATA_ENABLED:true}
+    # POST /api/v1/dev/seed 허용. 로그인한 누구나 모든 데이터를 지울 수 있으므로 운영에서는 반드시 끈다.
+    seed-enabled: ${DEV_SEED_ENABLED:true}
+    demo-password: ${DEMO_PASSWORD:demo1234!}
   ai:
-    provider: ${AI_PROVIDER:rule-based}
+    # auto: AI_API_KEY 가 있으면 외부 AI(openai-compatible), 없으면 규칙 기반(rule-based).
+    # 강제로 고르려면 AI_PROVIDER 에 rule-based 또는 openai-compatible 을 넣는다.
+    provider: ${AI_PROVIDER:auto}
     base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    # 키는 파일에 적지 말고 환경 변수로만 넣는다. 없으면 빈 값(규칙 기반으로 동작).
     api-key: ${AI_API_KEY:}
     model: ${AI_MODEL:gpt-4.1-mini}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:60}

@@ -24,11 +24,19 @@ public class RecurringRuleEntity {
     @Enumerated(EnumType.STRING)
     private Direction direction;
     private boolean active;
+    /** 이 규칙으로 만들어진 이벤트가 결제될 계좌. */
+    private Long accountId;
 
     protected RecurringRuleEntity() {
     }
 
     public RecurringRuleEntity(Long userId, String title, RecurrenceType recurrenceType, Integer dayOfMonth, LocalDate startDate, LocalDate endDate, long amount, EventType eventType, Direction direction, boolean active) {
+        this(userId, title, recurrenceType, dayOfMonth, startDate, endDate, amount, eventType, direction, active, null);
+    }
+
+    public RecurringRuleEntity(Long userId, String title, RecurrenceType recurrenceType, Integer dayOfMonth, LocalDate startDate, LocalDate endDate,
+                               long amount, EventType eventType, Direction direction, boolean active, Long accountId) {
+        this.accountId = accountId;
         this.userId = userId;
         this.title = title;
         this.recurrenceType = recurrenceType;
@@ -52,6 +60,11 @@ public class RecurringRuleEntity {
     public EventType getEventType() { return eventType; }
     public Direction getDirection() { return direction; }
     public boolean isActive() { return active; }
+    public Long getAccountId() { return accountId; }
+
+    public void changeAccount(Long accountId) {
+        if (accountId != null) this.accountId = accountId;
+    }
 
     public void update(String title, RecurrenceType recurrenceType, Integer dayOfMonth, LocalDate startDate, LocalDate endDate, Long amount, EventType eventType, Direction direction, Boolean active) {
         if (title != null) this.title = title;

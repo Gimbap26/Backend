@@ -25,4 +25,9 @@ public class BudgetCategoryLimitEntity {
     public Long getBudgetId() { return budgetId; }
     public String getCategoryName() { return categoryName; }
     public int getLimitAmount() { return limitAmount; }
+
+    /** 예산은 카테고리를 이름으로 참조하므로 카테고리 이름이 바뀌면 함께 바꿔야 한다. */
+    public void renameCategory(String categoryName) {
+        this.categoryName = categoryName;
+    }
 }

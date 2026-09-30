@@ -1,0 +1,10 @@
+# 이미지 빌드에 필요한 것은 pom.xml 과 src 뿐이다
+target/
+.git/
+.idea/
+*.iml
+output/
+tools/
+docs/
+.env
+.env.*

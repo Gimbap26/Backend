@@ -30,4 +30,9 @@ public class CategoryEntity {
     public String getName() { return name; }
     public CategoryType getCategoryType() { return categoryType; }
     public boolean isSystemDefault() { return systemDefault; }
+
+    public void update(String name, CategoryType categoryType) {
+        if (name != null) this.name = name;
+        if (categoryType != null) this.categoryType = categoryType;
+    }
 }

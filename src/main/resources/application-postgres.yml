@@ -10,3 +10,15 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: false
+
+money-weather:
+  auth:
+    # 기본값 없음: 지정하지 않으면 기동에 실패한다.
+    jwt-secret: ${JWT_SECRET}
+  dev:
+    # 시연용 데모 계정이 필요하면 DEMO_DATA_ENABLED=true (DB 가 비어 있을 때 한 번만 만든다)
+    demo-data-enabled: ${DEMO_DATA_ENABLED:false}
+    seed-enabled: ${DEV_SEED_ENABLED:false}

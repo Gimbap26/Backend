@@ -14,6 +14,9 @@ public class AccountEntity {
     private long balance;
     private String purpose;
     private boolean includedInAssets;
+    /** 같은 계좌를 동시에 수정할 때 한쪽 변경이 조용히 사라지지 않도록 막는다. */
+    @Version
+    private long version;
 
     protected AccountEntity() {
     }
@@ -34,4 +37,17 @@ public class AccountEntity {
     public long getBalance() { return balance; }
     public String getPurpose() { return purpose; }
     public boolean isIncludedInAssets() { return includedInAssets; }
+
+    /** 거래·결제로 인한 잔액 증감. 음수면 출금이다. */
+    public void adjustBalance(long delta) {
+        this.balance += delta;
+    }
+
+    public void update(String bankName, String accountName, Long balance, String purpose, Boolean includedInAssets) {
+        if (bankName != null) this.bankName = bankName;
+        if (accountName != null) this.accountName = accountName;
+        if (balance != null) this.balance = balance;
+        if (purpose != null) this.purpose = purpose;
+        if (includedInAssets != null) this.includedInAssets = includedInAssets;
+    }
 }

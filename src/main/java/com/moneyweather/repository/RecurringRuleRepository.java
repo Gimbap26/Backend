@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface RecurringRuleRepository extends JpaRepository<RecurringRuleEntity, Long> {
     List<RecurringRuleEntity> findByUserId(Long userId);
+    boolean existsByAccountId(Long accountId);
 }

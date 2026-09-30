@@ -24,19 +24,34 @@ public class AuthTokenService {
 
     public AuthTokenService(
             ObjectMapper objectMapper,
-            @Value("${money-weather.auth.jwt-secret:dev-secret-change-me}") String secret,
+            @Value("${money-weather.auth.jwt-secret}") String secret,
             @Value("${money-weather.auth.ttl-seconds:86400}") long ttlSeconds
     ) {
+        if (secret == null || secret.length() < 16) {
+            throw new IllegalStateException("JWT_SECRET 은 16자 이상이어야 합니다.");
+        }
         this.objectMapper = objectMapper;
         this.secret = secret;
         this.ttlSeconds = ttlSeconds;
     }
 
-    public String issue(Long userId) {
+    public long ttlSeconds() {
+        return ttlSeconds;
+    }
+
+    /** 토큰에서 꺼낸 사용자와, 발급 당시 사용자의 토큰 버전. */
+    public record TokenClaims(Long userId, int tokenVersion) {}
+
+    /**
+     * @param tokenVersion 발급 시점의 {@code users.token_version}. 로그아웃·비밀번호 변경으로 버전이 오르면
+     *                     이 토큰은 서명이 맞아도 거부된다.
+     */
+    public String issue(Long userId, int tokenVersion) {
         try {
             Map<String, Object> header = Map.of("alg", "HS256", "typ", "JWT");
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("sub", String.valueOf(userId));
+            payload.put("ver", tokenVersion);
             payload.put("iat", Instant.now().getEpochSecond());
             payload.put("exp", Instant.now().plusSeconds(ttlSeconds).getEpochSecond());
             String unsigned = encodeJson(header) + "." + encodeJson(payload);
@@ -46,7 +61,8 @@ public class AuthTokenService {
         }
     }
 
-    public Optional<Long> verify(String token) {
+    /** 서명과 만료만 확인한다. 토큰 버전이 사용자의 현재 버전과 같은지는 호출하는 쪽에서 확인한다. */
+    public Optional<TokenClaims> verify(String token) {
         try {
             String[] parts = token.split("\\.");
             if (parts.length != 3) return Optional.empty();
@@ -55,7 +71,8 @@ public class AuthTokenService {
             Map<String, Object> payload = objectMapper.readValue(base64UrlDecode(parts[1]), new TypeReference<>() {});
             long exp = ((Number) payload.getOrDefault("exp", 0)).longValue();
             if (exp < Instant.now().getEpochSecond()) return Optional.empty();
-            return Optional.of(Long.parseLong(String.valueOf(payload.get("sub"))));
+            int version = ((Number) payload.getOrDefault("ver", 0)).intValue();
+            return Optional.of(new TokenClaims(Long.parseLong(String.valueOf(payload.get("sub"))), version));
         } catch (Exception ignored) {
             return Optional.empty();
         }
