@@ -12,6 +12,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -50,7 +52,7 @@ public class TransactionService {
                                   Long categoryId, Long cardId, Long accountId, Long transferAccountId) {}
     public record TransactionMutation(LocalDate transactionDate, String merchant, long amount, TransactionType transactionType,
                                       Long categoryId, Long cardId, Long accountId, Long transferAccountId) {}
-    public record TransactionPatch(LocalDate transactionDate, String merchant, Long amount, TransactionType transactionType,
+    public record TransactionPatch(LocalDate transactionDate, @Size(min = 1) String merchant, @Positive Long amount, TransactionType transactionType,
                                    Long categoryId, Long cardId, Long accountId, Long transferAccountId) {}
 
     /**

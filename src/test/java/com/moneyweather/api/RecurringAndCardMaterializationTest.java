@@ -119,6 +119,47 @@ class RecurringAndCardMaterializationTest {
     }
 
     @Test
+    void monthlyRuleRequiresDayOfMonth() throws Exception {
+        mockMvc.perform(post("/api/v1/recurring-rules")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "title": "날짜 없는 월반복",
+                                  "recurrenceType": "MONTHLY",
+                                  "startDate": "2026-10-01",
+                                  "amount": 50000,
+                                  "eventType": "SUBSCRIPTION",
+                                  "direction": "OUTFLOW"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updatingRuleToMonthlyRequiresDayOfMonth() throws Exception {
+        String created = mockMvc.perform(post("/api/v1/recurring-rules")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "title": "주간저축",
+                                  "recurrenceType": "WEEKLY",
+                                  "startDate": "2026-10-05",
+                                  "amount": 30000,
+                                  "eventType": "TRANSFER",
+                                  "direction": "OUTFLOW"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        Object id = JsonPath.read(created, "$.recurringRuleId");
+
+        mockMvc.perform(patch("/api/v1/recurring-rules/{id}", id)
+                        .contentType("application/json")
+                        .content("{\"recurrenceType\":\"MONTHLY\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void repeatedQueryDoesNotDuplicateEvents() throws Exception {
         int first = JsonPath.<List<Object>>read(eventsBetween("2026-11-01", "2026-11-30"), "$.events").size();
         int second = JsonPath.<List<Object>>read(eventsBetween("2026-11-01", "2026-11-30"), "$.events").size();

@@ -72,6 +72,17 @@ class LedgerAndAssetTest extends ApiTestSupport {
     }
 
     @Test
+    void invalidTransactionPatchIsRejected() throws Exception {
+        long living = accountId("생활비 통장");
+        String created = body(postJson("/api/v1/transactions", tx("EXPENSE", 50_000, "\"accountId\":" + living)).andExpect(status().isOk()));
+        long id = readLong(created, "$.transactionId");
+
+        patchJson("/api/v1/transactions/" + id, "{\"amount\":-1}").andExpect(status().isBadRequest());
+        patchJson("/api/v1/transactions/" + id, "{\"merchant\":\"\"}").andExpect(status().isBadRequest());
+        assertThat(balanceOf("생활비 통장")).isEqualTo(750_000);
+    }
+
+    @Test
     void deletingTransactionRestoresBalance() throws Exception {
         long living = accountId("생활비 통장");
         long id = readLong(body(postJson("/api/v1/transactions", tx("EXPENSE", 50_000, "\"accountId\":" + living))), "$.transactionId");
@@ -142,6 +153,17 @@ class LedgerAndAssetTest extends ApiTestSupport {
         patchJson("/api/v1/financial-events/" + netflix, "{\"amount\":45000}").andExpect(status().isOk());
 
         assertThat(balanceOf("생활비 통장")).isEqualTo(755_000);
+    }
+
+    @Test
+    void invalidFinancialEventPatchIsRejected() throws Exception {
+        long netflix = eventId(SEPT_FROM, SEPT_TO, "넷플릭스");
+
+        patchJson("/api/v1/financial-events/" + netflix, "{\"amount\":-1}").andExpect(status().isBadRequest());
+        patchJson("/api/v1/financial-events/" + netflix, "{\"title\":\"\"}").andExpect(status().isBadRequest());
+
+        String events = getOk("/api/v1/financial-events", "from", SEPT_FROM, "to", SEPT_TO);
+        assertThat(((Number) first(events, "$.events[?(@.title=='넷플릭스')].amount")).longValue()).isEqualTo(39_000);
     }
 
     @Test

@@ -12,6 +12,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,8 +50,9 @@ public class ScheduleController {
 
     @PatchMapping("/financial-events/{eventId}")
     @Operation(summary = "예정 금융 이벤트 수정", description = "이벤트 일자, 제목, 금액, 상태, 고정 지출 여부를 수정합니다.")
-    public Map<String, Object> updateEvent(@PathVariable long eventId, @RequestBody EventPatch request) {
-        return service.updateEvent(eventId, request);
+    public Map<String, Object> updateEvent(@PathVariable long eventId, @Valid @RequestBody EventPatch request) {
+        return service.updateEvent(eventId, new ScheduleService.EventPatch(request.eventDate(), request.title(), request.amount(),
+                request.status(), request.fixed(), request.accountId()));
     }
 
     @DeleteMapping("/financial-events/{eventId}")
@@ -75,8 +79,9 @@ public class ScheduleController {
 
     @PatchMapping("/recurring-rules/{id}")
     @Operation(summary = "반복 규칙 수정", description = "반복 규칙의 제목, 금액, 일자, 활성 상태 등을 수정합니다.")
-    public RecurringRule updateRule(@PathVariable long id, @RequestBody RecurringPatch request) {
-        return service.updateRule(id, request);
+    public RecurringRule updateRule(@PathVariable long id, @Valid @RequestBody RecurringPatch request) {
+        return service.updateRule(id, new ScheduleService.RecurringPatch(request.title(), request.recurrenceType(), request.dayOfMonth(),
+                request.startDate(), request.endDate(), request.amount(), request.eventType(), request.direction(), request.active(), request.accountId()));
     }
 
     @DeleteMapping("/recurring-rules/{id}")
@@ -87,6 +92,9 @@ public class ScheduleController {
 
     public record EventCreateRequest(@NotNull LocalDate eventDate, @NotBlank String title, @Positive long amount, @NotNull Direction direction,
                                      @NotNull EventType eventType, boolean fixed, Long accountId) {}
-    public record RecurringCreateRequest(@NotBlank String title, @NotNull RecurrenceType recurrenceType, Integer dayOfMonth, @NotNull LocalDate startDate,
+    public record RecurringCreateRequest(@NotBlank String title, @NotNull RecurrenceType recurrenceType, @Min(1) @Max(31) Integer dayOfMonth, @NotNull LocalDate startDate,
                                          LocalDate endDate, @Positive long amount, @NotNull EventType eventType, @NotNull Direction direction, Long accountId) {}
+    public record EventPatch(LocalDate eventDate, @Size(min = 1) String title, @Positive Long amount, EventStatus status, Boolean fixed, Long accountId) {}
+    public record RecurringPatch(@Size(min = 1) String title, RecurrenceType recurrenceType, @Min(1) @Max(31) Integer dayOfMonth, LocalDate startDate,
+                                 LocalDate endDate, @Positive Long amount, EventType eventType, Direction direction, Boolean active, Long accountId) {}
 }

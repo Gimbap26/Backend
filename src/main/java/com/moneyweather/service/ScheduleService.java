@@ -130,6 +130,7 @@ public class ScheduleService {
     public RuleCreation createRule(RecurringMutation request) {
         Long userId = currentUser.requireId();
         if (request.accountId() != null) ledger.requireOwnedAccount(userId, request.accountId());
+        validateRecurringMutation(request);
         RecurringRuleEntity rule = rules.save(new RecurringRuleEntity(userId, request.title(), request.recurrenceType(), request.dayOfMonth(),
                 request.startDate(), request.endDate(), request.amount(), request.eventType(), request.direction(), true, request.accountId()));
         rules.flush();
@@ -148,6 +149,7 @@ public class ScheduleService {
         Long userId = currentUser.requireId();
         RecurringRuleEntity rule = requireOwnedRule(userId, id);
         if (request.accountId() != null) ledger.requireOwnedAccount(userId, request.accountId());
+        validateRecurringPatch(rule, request);
         rule.update(request.title(), request.recurrenceType(), request.dayOfMonth(), request.startDate(), request.endDate(), request.amount(), request.eventType(), request.direction(), request.active());
         rule.changeAccount(request.accountId());
         rules.flush();
@@ -171,6 +173,27 @@ public class ScheduleService {
         RecurringRuleEntity rule = rules.findById(id).orElseThrow(() -> Errors.notFound("Recurring rule not found."));
         currentUser.assertOwner(rule.getUserId(), userId);
         return rule;
+    }
+
+    private void validateRecurringMutation(RecurringMutation request) {
+        validateRecurringValues(request.recurrenceType(), request.dayOfMonth(), request.startDate(), request.endDate());
+    }
+
+    private void validateRecurringPatch(RecurringRuleEntity current, RecurringPatch request) {
+        RecurrenceType effectiveType = request.recurrenceType() == null ? current.getRecurrenceType() : request.recurrenceType();
+        Integer effectiveDay = request.dayOfMonth() == null ? current.getDayOfMonth() : request.dayOfMonth();
+        LocalDate effectiveStart = request.startDate() == null ? current.getStartDate() : request.startDate();
+        LocalDate effectiveEnd = request.endDate() == null ? current.getEndDate() : request.endDate();
+        validateRecurringValues(effectiveType, effectiveDay, effectiveStart, effectiveEnd);
+    }
+
+    private void validateRecurringValues(RecurrenceType recurrenceType, Integer dayOfMonth, LocalDate startDate, LocalDate endDate) {
+        if (recurrenceType == RecurrenceType.MONTHLY && dayOfMonth == null) {
+            throw Errors.badRequest("MONTHLY recurring rule requires dayOfMonth.");
+        }
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw Errors.badRequest("endDate must be same as or after startDate.");
+        }
     }
 
     /**

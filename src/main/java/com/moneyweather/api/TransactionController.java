@@ -48,7 +48,7 @@ public class TransactionController {
 
     @PatchMapping("/{transactionId}")
     @Operation(summary = "거래 수정", description = "거래의 일자, 상호, 금액, 유형, 카테고리, 카드를 부분 수정합니다.")
-    public TransactionView update(@PathVariable long transactionId, @RequestBody TransactionPatch request) {
+    public TransactionView update(@PathVariable long transactionId, @Valid @RequestBody TransactionPatch request) {
         return service.update(transactionId, request);
     }
 

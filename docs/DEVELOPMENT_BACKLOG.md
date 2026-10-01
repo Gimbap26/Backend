@@ -1,6 +1,6 @@
 # Remaining Development Backlog
 
-기능 명세서의 API 는 모두 구현되어 자동 테스트(110개)로 검증되어 있습니다(`docs/FEATURE_COVERAGE.md`).
+기능 명세서의 API 는 모두 구현되어 자동 테스트(121개)로 검증되어 있습니다(`docs/FEATURE_COVERAGE.md`).
 CORS, 토큰 무효화, 로그인 제한, DB 페이징, Docker 배포 구성까지 끝났습니다. 아래는 그 다음 단계입니다.
 
 ## 1. 첫 배포 때 확인할 것
